@@ -23,6 +23,7 @@ import tempfile
 import time
 import uuid
 import web
+import errno
 
 urls = (
     "/", "index",
@@ -226,8 +227,16 @@ class task:
         except KeyError:
             pass
 
+        data = db.select("task, service",
+                         what="username, service_id, name",
+                         where="task.id = $id and service.id = service_id",
+                         vars={"id": parameters["id"]})[0]
+
         # Create output file
-        fileobj = tempfile.NamedTemporaryFile(dir=data_directory, delete=False)
+        path = os.path.join(data_directory, data["name"])
+        mkdirp(path)
+        fileobj = tempfile.NamedTemporaryFile(dir=path,
+                                              delete=False)
         fileobj.write(web.data())
         fileobj.close()
         data_file = os.path.relpath(fileobj.name, data_directory)
@@ -246,7 +255,6 @@ class task:
             raise web.Conflict()
 
         # Update statistics
-        data = db.select("task", what="username, service_id", where="id = $id", vars={"id": parameters["id"]})[0]
         if username:
             count = db.update("statistics",
                 "username = $username AND service_id = $service_id",
@@ -362,3 +370,11 @@ application = app.wsgifunc()
 
 if __name__ == "__main__":
     app.run()
+
+def mkdirp(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
