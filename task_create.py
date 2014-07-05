@@ -23,9 +23,9 @@ import tinyarchive.tracker
 import tinyarchive.utils
 import tinyback.generators
 
-def count_sequence(charset, count, start):
+def count_sequence(charset, index, start):
     for i, code in enumerate(tinyback.generators.factory("sequence", {"charset": charset, "start": start, "stop": ""})):
-        if i == count - 1:
+        if i == index:
             return code
 
 def sequence_from_to(tracker, service, charset, start, stop, count):
@@ -38,11 +38,11 @@ def sequence_from_to(tracker, service, charset, start, stop, count):
         "stop": None
     }
     while generator_options["stop"] != stop:
-        generator_options["stop"] = count_sequence(generator_options["charset"], count, generator_options["start"])
+        generator_options["stop"] = count_sequence(generator_options["charset"], count-1, generator_options["start"])
         if tinyarchive.utils.shortcode_compare(generator_options["stop"], stop) > 0:
             generator_options["stop"] = stop
         print tracker.admin_create(service, "sequence", generator_options)
-        generator_options["start"] = generator_options["stop"]
+        generator_options["start"] = count_sequence(generator_options["charset"], 1, generator_options["stop"])
 
 def chain_multiple(tracker, service, charset, length, count, number_of_tasks):
     generator_options = {
@@ -54,4 +54,4 @@ def chain_multiple(tracker, service, charset, length, count, number_of_tasks):
         generator_options["seed"] = str(uuid.uuid4())
         print tracker.admin_create(service, "chain", generator_options)
 
-tracker = tinyarchive.tracker.Tracker("http://urlteam.terrywri.st/")
+tracker = tinyarchive.tracker.Tracker("http://localhost:8080/")
